@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import DashboardStats from './DashboardStats';
+import MoodTracker from './MoodTracker';
 import { useHealthStore } from '../store/useHealthStore';
 import { Activity, Heart, Zap, Trophy, Calendar, Target, Play, Clock } from 'lucide-react';
 
@@ -77,6 +79,9 @@ export default function DashboardScreen() {
           Фитнес-платформа для IT профессионалов с сидячим образом жизни
         </p>
       </div>
+
+      {/* Dashboard Stats */}
+      <DashboardStats />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -157,6 +162,11 @@ export default function DashboardScreen() {
               <Heart className="h-4 w-4 mr-2" />
               Отследить настроение
             </Button>
+            
+            <div className="mt-4">
+              <MoodTracker />
+            </div>
+            
             <Button 
               className="w-full justify-start" 
               variant="outline"
