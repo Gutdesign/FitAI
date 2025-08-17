@@ -1,105 +1,68 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card } from './ui/card';
-import { Checkbox } from './ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { useHealthStore } from '../store/useHealthStore';
-import { User2, Briefcase, Target, Dumbbell, Clock, Bell } from 'lucide-react';
+import { User2, Briefcase, Target, CheckCircle } from 'lucide-react';
 
-const onboardingSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  age: z.number().min(25).max(65),
-  jobTitle: z.string().min(2, 'Job title is required'),
-  workHours: z.number().min(6).max(16),
-  fitnessLevel: z.enum(['beginner', 'intermediate', 'advanced']),
-  goals: z.array(z.string()).min(1, 'Select at least one goal'),
-  equipment: z.array(z.string()),
-  workoutTime: z.string(),
-  duration: z.number().min(5).max(120),
-  reminderTime: z.string()
-});
-
-type OnboardingForm = z.infer<typeof onboardingSchema>;
+interface OnboardingData {
+  name: string;
+  email: string;
+  age: number;
+  jobTitle: string;
+  workHours: number;
+  fitnessLevel: 'beginner' | 'intermediate' | 'advanced';
+  goals: string[];
+  equipment: string[];
+}
 
 const steps = [
-  { id: 1, title: 'Personal Info', icon: User2 },
-  { id: 2, title: 'Work & Lifestyle', icon: Briefcase },
-  { id: 3, title: 'Fitness Goals', icon: Target },
-  { id: 4, title: 'Equipment', icon: Dumbbell },
-  { id: 5, title: 'Preferences', icon: Clock }
+  { id: 1, title: 'Личная информация', icon: User2 },
+  { id: 2, title: 'Работа и образ жизни', icon: Briefcase },
+  { id: 3, title: 'Фитнес цели', icon: Target },
+  { id: 4, title: 'Готово!', icon: CheckCircle }
 ];
 
 const fitnessGoals = [
-  'Weight Loss',
-  'Muscle Building',
-  'Stress Reduction',
-  'Better Posture',
-  'Increased Energy',
-  'Better Sleep',
-  'General Fitness',
-  'Flexibility'
+  'Снижение веса',
+  'Наращивание мышц',
+  'Снятие стресса',
+  'Улучшение осанки',
+  'Повышение энергии',
+  'Лучший сон',
+  'Общая физическая форма',
+  'Гибкость'
 ];
 
 const availableEquipment = [
-  'None (Bodyweight only)',
-  'Resistance Bands',
-  'Dumbbells',
-  'Kettlebell',
-  'Yoga Mat',
-  'Pull-up Bar',
-  'Foam Roller',
-  'Exercise Ball'
+  'Без оборудования (только вес тела)',
+  'Эспандер',
+  'Гантели',
+  'Гиря',
+  'Коврик для йоги',
+  'Турник',
+  'Массажный ролик',
+  'Фитбол'
 ];
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
-  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [formData, setFormData] = useState<Partial<OnboardingData>>({
+    goals: [],
+    equipment: []
+  });
   const { setUser, completeOnboarding } = useHealthStore();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch
-  } = useForm<OnboardingForm>({
-    resolver: zodResolver(onboardingSchema),
-    defaultValues: {
-      workHours: 8,
-      duration: 20,
-      workoutTime: '08:00',
-      reminderTime: '08:00'
-    }
-  });
+  const updateFormData = (field: keyof OnboardingData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-  const onSubmit = (data: OnboardingForm) => {
-    const user = {
-      id: Date.now().toString(),
-      name: data.name,
-      email: data.email,
-      age: data.age,
-      jobTitle: data.jobTitle,
-      workHours: data.workHours,
-      fitnessLevel: data.fitnessLevel,
-      goals: data.goals,
-      equipment: data.equipment,
-      restrictions: [],
-      preferences: {
-        workoutTime: data.workoutTime,
-        duration: data.duration,
-        reminderTime: data.reminderTime
-      }
-    };
-
-    setUser(user);
-    completeOnboarding();
+  const toggleArrayItem = (field: 'goals' | 'equipment', item: string) => {
+    const current = formData[field] || [];
+    const updated = current.includes(item) 
+      ? current.filter(i => i !== item)
+      : [...current, item];
+    updateFormData(field, updated);
   };
 
   const nextStep = () => {
@@ -114,20 +77,27 @@ export default function Onboarding() {
     }
   };
 
-  const handleGoalChange = (goal: string, checked: boolean) => {
-    const newGoals = checked 
-      ? [...selectedGoals, goal]
-      : selectedGoals.filter(g => g !== goal);
-    setSelectedGoals(newGoals);
-    setValue('goals', newGoals);
-  };
+  const completeSetup = () => {
+    const user = {
+      id: Date.now().toString(),
+      name: formData.name || 'Пользователь',
+      email: formData.email || '',
+      age: formData.age || 35,
+      jobTitle: formData.jobTitle || 'IT специалист',
+      workHours: formData.workHours || 8,
+      fitnessLevel: formData.fitnessLevel || 'beginner',
+      goals: formData.goals || ['Улучшение осанки'],
+      equipment: formData.equipment || ['Без оборудования'],
+      restrictions: [],
+      preferences: {
+        workoutTime: '08:00',
+        duration: 20,
+        reminderTime: '08:00'
+      }
+    };
 
-  const handleEquipmentChange = (equipment: string, checked: boolean) => {
-    const newEquipment = checked 
-      ? [...selectedEquipment, equipment]
-      : selectedEquipment.filter(e => e !== equipment);
-    setSelectedEquipment(newEquipment);
-    setValue('equipment', newEquipment);
+    setUser(user);
+    completeOnboarding();
   };
 
   return (
@@ -161,54 +131,48 @@ export default function Onboarding() {
           })}
         </div>
 
-        <Card className="p-6 sm:p-8">
-          <form onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <CardContent className="p-6">
             {/* Step 1: Personal Info */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-semibold mb-2">Let's get to know you</h2>
-                  <p className="text-muted-foreground">Help us personalize your fitness journey</p>
-                </div>
+                <CardHeader className="p-0">
+                  <CardTitle className="text-center">Давайте знакомиться</CardTitle>
+                  <p className="text-center text-muted-foreground">
+                    Помогите нам персонализировать ваш фитнес-путь
+                  </p>
+                </CardHeader>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Full Name</Label>
+                    <label className="block text-sm font-medium mb-2">Полное имя</label>
                     <Input
-                      id="name"
-                      {...register('name')}
-                      placeholder="Enter your name"
+                      placeholder="Введите ваше имя"
+                      value={formData.name || ''}
+                      onChange={(e) => updateFormData('name', e.target.value)}
                     />
-                    {errors.name && (
-                      <p className="text-destructive text-sm mt-1">{errors.name.message}</p>
-                    )}
                   </div>
 
-                  <div>
-                    <Label htmlFor="age">Age</Label>
-                    <Input
-                      id="age"
-                      type="number"
-                      {...register('age', { valueAsNumber: true })}
-                      placeholder="Enter your age"
-                    />
-                    {errors.age && (
-                      <p className="text-destructive text-sm mt-1">{errors.age.message}</p>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Email</label>
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={formData.email || ''}
+                        onChange={(e) => updateFormData('email', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Возраст</label>
+                      <Input
+                        type="number"
+                        placeholder="35"
+                        value={formData.age || ''}
+                        onChange={(e) => updateFormData('age', parseInt(e.target.value))}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...register('email')}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && (
-                    <p className="text-destructive text-sm mt-1">{errors.email.message}</p>
-                  )}
                 </div>
               </div>
             )}
@@ -216,146 +180,124 @@ export default function Onboarding() {
             {/* Step 2: Work & Lifestyle */}
             {currentStep === 2 && (
               <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-semibold mb-2">Work & Lifestyle</h2>
-                  <p className="text-muted-foreground">Tell us about your work routine</p>
-                </div>
+                <CardHeader className="p-0">
+                  <CardTitle className="text-center">Работа и образ жизни</CardTitle>
+                  <p className="text-center text-muted-foreground">
+                    Расскажите о вашем рабочем режиме
+                  </p>
+                </CardHeader>
 
-                <div>
-                  <Label htmlFor="jobTitle">Job Title / Role</Label>
-                  <Input
-                    id="jobTitle"
-                    {...register('jobTitle')}
-                    placeholder="e.g., Software Developer, System Admin"
-                  />
-                  {errors.jobTitle && (
-                    <p className="text-destructive text-sm mt-1">{errors.jobTitle.message}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="workHours">Work Hours per Day</Label>
+                    <label className="block text-sm font-medium mb-2">Должность</label>
                     <Input
-                      id="workHours"
-                      type="number"
-                      {...register('workHours', { valueAsNumber: true })}
-                      placeholder="8"
+                      placeholder="например: Разработчик ПО, Системный администратор"
+                      value={formData.jobTitle || ''}
+                      onChange={(e) => updateFormData('jobTitle', e.target.value)}
                     />
-                    {errors.workHours && (
-                      <p className="text-destructive text-sm mt-1">{errors.workHours.message}</p>
-                    )}
                   </div>
 
-                  <div>
-                    <Label htmlFor="fitnessLevel">Current Fitness Level</Label>
-                    <Select onValueChange={(value) => setValue('fitnessLevel', value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select fitness level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.fitnessLevel && (
-                      <p className="text-destructive text-sm mt-1">{errors.fitnessLevel.message}</p>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Рабочих часов в день</label>
+                      <Input
+                        type="number"
+                        placeholder="8"
+                        value={formData.workHours || ''}
+                        onChange={(e) => updateFormData('workHours', parseInt(e.target.value))}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Уровень физической подготовки</label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {['beginner', 'intermediate', 'advanced'].map((level) => (
+                          <Button
+                            key={level}
+                            variant={formData.fitnessLevel === level ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updateFormData('fitnessLevel', level)}
+                          >
+                            {level === 'beginner' ? 'Начинающий' : 
+                             level === 'intermediate' ? 'Средний' : 'Продвинутый'}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Fitness Goals */}
+            {/* Step 3: Goals */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-semibold mb-2">Your Fitness Goals</h2>
-                  <p className="text-muted-foreground">What do you want to achieve? (Select multiple)</p>
-                </div>
+                <CardHeader className="p-0">
+                  <CardTitle className="text-center">Ваши фитнес цели</CardTitle>
+                  <p className="text-center text-muted-foreground">
+                    Чего вы хотите достичь? (Выберите несколько)
+                  </p>
+                </CardHeader>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {fitnessGoals.map((goal) => (
-                    <div key={goal} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={goal}
-                        checked={selectedGoals.includes(goal)}
-                        onCheckedChange={(checked) => handleGoalChange(goal, !!checked)}
-                      />
-                      <Label htmlFor={goal}>{goal}</Label>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Цели</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {fitnessGoals.map((goal) => (
+                        <Button
+                          key={goal}
+                          variant={formData.goals?.includes(goal) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleArrayItem('goals', goal)}
+                        >
+                          {goal}
+                        </Button>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
 
-                {errors.goals && (
-                  <p className="text-destructive text-sm">{errors.goals.message}</p>
-                )}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Доступное оборудование</label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {availableEquipment.slice(0, 4).map((equipment) => (
+                        <Button
+                          key={equipment}
+                          variant={formData.equipment?.includes(equipment) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleArrayItem('equipment', equipment)}
+                        >
+                          {equipment}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Step 4: Equipment */}
+            {/* Step 4: Complete */}
             {currentStep === 4 && (
               <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-semibold mb-2">Available Equipment</h2>
-                  <p className="text-muted-foreground">What equipment do you have access to?</p>
-                </div>
+                <CardHeader className="p-0">
+                  <CardTitle className="text-center">Всё готово! 🎉</CardTitle>
+                  <p className="text-center text-muted-foreground">
+                    Ваш персональный фитнес-план готов
+                  </p>
+                </CardHeader>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {availableEquipment.map((equipment) => (
-                    <div key={equipment} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={equipment}
-                        checked={selectedEquipment.includes(equipment)}
-                        onCheckedChange={(checked) => handleEquipmentChange(equipment, !!checked)}
-                      />
-                      <Label htmlFor={equipment}>{equipment}</Label>
+                <div className="text-center space-y-4">
+                  <div className="bg-muted p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Ваш профиль:</h4>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>👤 {formData.name}, {formData.age} лет</p>
+                      <p>💼 {formData.jobTitle}</p>
+                      <p>🎯 {formData.goals?.length} целей выбрано</p>
+                      <p>⚡ Уровень: {
+                        formData.fitnessLevel === 'beginner' ? 'Начинающий' :
+                        formData.fitnessLevel === 'intermediate' ? 'Средний' : 'Продвинутый'
+                      }</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step 5: Preferences */}
-            {currentStep === 5 && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-semibold mb-2">Workout Preferences</h2>
-                  <p className="text-muted-foreground">Set up your workout schedule</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="workoutTime">Preferred Workout Time</Label>
-                    <Input
-                      id="workoutTime"
-                      type="time"
-                      {...register('workoutTime')}
-                    />
                   </div>
-
-                  <div>
-                    <Label htmlFor="duration">Session Duration (minutes)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      {...register('duration', { valueAsNumber: true })}
-                      placeholder="20"
-                    />
-                    {errors.duration && (
-                      <p className="text-destructive text-sm mt-1">{errors.duration.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="reminderTime">Daily Reminder Time</Label>
-                  <Input
-                    id="reminderTime"
-                    type="time"
-                    {...register('reminderTime')}
-                  />
                 </div>
               </div>
             )}
@@ -363,25 +305,24 @@ export default function Onboarding() {
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-6 mt-6 border-t">
               <Button
-                type="button"
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 1}
               >
-                Previous
+                Назад
               </Button>
 
               {currentStep === steps.length ? (
-                <Button type="submit">
-                  Complete Setup
+                <Button onClick={completeSetup}>
+                  Начать путешествие!
                 </Button>
               ) : (
-                <Button type="button" onClick={nextStep}>
-                  Next
+                <Button onClick={nextStep}>
+                  Далее
                 </Button>
               )}
             </div>
-          </form>
+          </CardContent>
         </Card>
       </div>
     </div>

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export interface User {
   id: string;
@@ -88,154 +87,141 @@ interface HealthState {
 const defaultWorkouts: Workout[] = [
   {
     id: '1',
-    name: 'Desk Break Stretch',
+    name: 'Растяжка на рабочем месте',
     type: 'flexibility',
     duration: 5,
     difficulty: 'easy',
     equipment: [],
-    description: 'Quick desk stretches to relieve tension',
+    description: 'Быстрая растяжка для снятия напряжения',
     instructions: [
-      'Neck rolls - 5 in each direction',
-      'Shoulder shrugs - 10 reps',
-      'Seated spinal twist - hold 15 seconds each side',
-      'Wrist circles - 10 in each direction'
+      'Повороты шеи - по 5 в каждую сторону',
+      'Подъемы плеч - 10 повторений',
+      'Поворот корпуса сидя - держать 15 секунд в каждую сторону',
+      'Круги запястьями - по 10 в каждую сторону'
     ],
     category: 'desk'
   },
   {
     id: '2',
-    name: 'Power 15 HIIT',
+    name: 'Силовая 15 мин',
     type: 'cardio',
     duration: 15,
     difficulty: 'medium',
     equipment: [],
-    description: 'High-intensity interval training for busy schedules',
+    description: 'Интенсивная интервальная тренировка для занятых',
     instructions: [
-      '2 minutes warm-up (light jogging in place)',
-      '30 seconds burpees, 30 seconds rest - repeat 3 times',
-      '30 seconds mountain climbers, 30 seconds rest - repeat 3 times',
-      '30 seconds jumping jacks, 30 seconds rest - repeat 2 times',
-      '2 minutes cool-down stretching'
+      '2 минуты разминка (легкий бег на месте)',
+      '30 секунд берпи, 30 секунд отдых - повторить 3 раза',
+      '30 секунд альпинист, 30 секунд отдых - повторить 3 раза',
+      '30 секунд прыжки, 30 секунд отдых - повторить 2 раза',
+      '2 минуты растяжка'
     ],
     category: 'home'
   },
   {
     id: '3',
-    name: 'Strength Essentials',
+    name: 'Основы силовых',
     type: 'strength',
     duration: 20,
     difficulty: 'medium',
-    equipment: ['dumbbells'],
-    description: 'Basic strength training with minimal equipment',
+    equipment: ['гантели'],
+    description: 'Базовая силовая тренировка с минимальным оборудованием',
     instructions: [
-      'Push-ups: 3 sets of 10-15',
-      'Dumbbell rows: 3 sets of 12',
-      'Squats: 3 sets of 15',
-      'Plank: 3 sets of 30 seconds',
-      'Dumbbell overhead press: 3 sets of 10'
+      'Отжимания: 3 подхода по 10-15',
+      'Тяга гантелей: 3 подхода по 12',
+      'Приседания: 3 подхода по 15',
+      'Планка: 3 подхода по 30 секунд',
+      'Жим гантелей над головой: 3 подхода по 10'
     ],
     category: 'home'
   }
 ];
 
-export const useHealthStore = create<HealthState>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      user: null,
-      isOnboarded: false,
-      workouts: defaultWorkouts,
-      workoutSessions: [],
-      moodEntries: [],
-      activeTab: 'chat',
+export const useHealthStore = create<HealthState>((set, get) => ({
+  // Initial state
+  user: null,
+  isOnboarded: false,
+  workouts: defaultWorkouts,
+  workoutSessions: [],
+  moodEntries: [],
+  activeTab: 'dashboard',
+  
+  // Actions
+  setUser: (user) => set({ user }),
+  
+  completeOnboarding: () => set({ isOnboarded: true }),
+  
+  setActiveTab: (activeTab) => set({ activeTab }),
+  
+  addWorkoutSession: (session) =>
+    set((state) => ({
+      workoutSessions: [...state.workoutSessions, session]
+    })),
+  
+  addMoodEntry: (entry) =>
+    set((state) => ({
+      moodEntries: [...state.moodEntries, entry]
+    })),
+  
+  updateWorkoutSession: (id, updates) =>
+    set((state) => ({
+      workoutSessions: state.workoutSessions.map((session) =>
+        session.id === id ? { ...session, ...updates } : session
+      )
+    })),
+  
+  // Analytics
+  getWeeklyStats: () => {
+    const state = get();
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const recentSessions = state.workoutSessions.filter(
+      (session) => new Date(session.date) >= oneWeekAgo && session.completed
+    );
+    
+    const recentMoods = state.moodEntries.filter(
+      (entry) => new Date(entry.date) >= oneWeekAgo
+    );
+    
+    return {
+      workoutsCompleted: recentSessions.length,
+      averageMood: recentMoods.length > 0 
+        ? recentMoods.reduce((sum, entry) => sum + entry.mood, 0) / recentMoods.length 
+        : 0,
+      averageEnergy: recentMoods.length > 0
+        ? recentMoods.reduce((sum, entry) => sum + entry.energy, 0) / recentMoods.length
+        : 0,
+      totalMinutes: recentSessions.reduce((sum, session) => sum + session.duration, 0)
+    };
+  },
+  
+  getStreakDays: () => {
+    const state = get();
+    const sessions = [...state.workoutSessions]
+      .filter(session => session.completed)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    if (sessions.length === 0) return 0;
+    
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    for (const session of sessions) {
+      const sessionDate = new Date(session.date);
+      sessionDate.setHours(0, 0, 0, 0);
       
-      // Actions
-      setUser: (user) => set({ user }),
+      const diffDays = Math.floor((currentDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      completeOnboarding: () => set({ isOnboarded: true }),
-      
-      setActiveTab: (activeTab) => set({ activeTab }),
-      
-      addWorkoutSession: (session) =>
-        set((state) => ({
-          workoutSessions: [...state.workoutSessions, session]
-        })),
-      
-      addMoodEntry: (entry) =>
-        set((state) => ({
-          moodEntries: [...state.moodEntries, entry]
-        })),
-      
-      updateWorkoutSession: (id, updates) =>
-        set((state) => ({
-          workoutSessions: state.workoutSessions.map((session) =>
-            session.id === id ? { ...session, ...updates } : session
-          )
-        })),
-      
-      // Analytics
-      getWeeklyStats: () => {
-        const state = get();
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        
-        const recentSessions = state.workoutSessions.filter(
-          (session) => new Date(session.date) >= oneWeekAgo && session.completed
-        );
-        
-        const recentMoods = state.moodEntries.filter(
-          (entry) => new Date(entry.date) >= oneWeekAgo
-        );
-        
-        return {
-          workoutsCompleted: recentSessions.length,
-          averageMood: recentMoods.length > 0 
-            ? recentMoods.reduce((sum, entry) => sum + entry.mood, 0) / recentMoods.length 
-            : 0,
-          averageEnergy: recentMoods.length > 0
-            ? recentMoods.reduce((sum, entry) => sum + entry.energy, 0) / recentMoods.length
-            : 0,
-          totalMinutes: recentSessions.reduce((sum, session) => sum + session.duration, 0)
-        };
-      },
-      
-      getStreakDays: () => {
-        const state = get();
-        const sessions = [...state.workoutSessions]
-          .filter(session => session.completed)
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        if (sessions.length === 0) return 0;
-        
-        let streak = 0;
-        let currentDate = new Date();
-        currentDate.setHours(0, 0, 0, 0);
-        
-        for (const session of sessions) {
-          const sessionDate = new Date(session.date);
-          sessionDate.setHours(0, 0, 0, 0);
-          
-          const diffDays = Math.floor((currentDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (diffDays === streak) {
-            streak++;
-            currentDate.setDate(currentDate.getDate() - 1);
-          } else if (diffDays > streak) {
-            break;
-          }
-        }
-        
-        return streak;
+      if (diffDays === streak) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else if (diffDays > streak) {
+        break;
       }
-    }),
-    {
-      name: 'health-store',
-      partialize: (state) => ({
-        user: state.user,
-        isOnboarded: state.isOnboarded,
-        workoutSessions: state.workoutSessions,
-        moodEntries: state.moodEntries
-      })
     }
-  )
-);
+    
+    return streak;
+  }
+}));

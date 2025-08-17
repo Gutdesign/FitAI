@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Menu, X, MessageCircle, BarChart3, Calendar, User, Home } from 'lucide-react';
+import { Menu, MessageCircle, BarChart3, Calendar, User, Home } from 'lucide-react';
 import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { useHealthStore } from '../store/useHealthStore';
 
 const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'dashboard', label: 'Главная', icon: Home },
   { id: 'chat', label: 'Чат', icon: MessageCircle },
   { id: 'stats', label: 'Статистика', icon: BarChart3 },
   { id: 'calendar', label: 'Календарь', icon: Calendar },
@@ -30,36 +29,39 @@ export default function Navigation() {
             <h1 className="text-xl font-semibold">Overall Health</h1>
             {user && (
               <span className="text-sm text-muted-foreground hidden sm:block">
-                Hi, {user.name.split(' ')[0]}
+                Привет, {user.name.split(' ')[0]}
               </span>
             )}
           </div>
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-64">
-              <div className="flex flex-col space-y-4 mt-8">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.id}
-                      variant={activeTab === item.id ? "default" : "ghost"}
-                      className="justify-start"
-                      onClick={() => handleTabClick(item.id)}
-                    >
-                      <Icon className="h-5 w-5 mr-3" />
-                      {item.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </SheetContent>
-          </Sheet>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
         </div>
+        
+        {mobileMenuOpen && (
+          <div className="border-t border-border bg-background p-4">
+            <div className="flex flex-col space-y-2">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.id}
+                    variant={activeTab === item.id ? "default" : "ghost"}
+                    className="justify-start"
+                    onClick={() => handleTabClick(item.id)}
+                  >
+                    <Icon className="h-5 w-5 mr-3" />
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Desktop Navigation */}
@@ -69,7 +71,7 @@ export default function Navigation() {
             <h1 className="text-xl font-semibold">Overall Health</h1>
             {user && (
               <span className="text-sm text-muted-foreground">
-                Hi, {user.name.split(' ')[0]}
+                Привет, {user.name.split(' ')[0]}
               </span>
             )}
           </div>
@@ -90,17 +92,6 @@ export default function Navigation() {
             })}
           </div>
         </div>
-      </div>
-
-      {/* Fixed CTA Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          onClick={() => handleTabClick('dashboard')}
-          className="h-14 px-6 rounded-full shadow-lg bg-primary hover:bg-primary/90"
-        >
-          <Home className="h-5 w-5 mr-2" />
-          Dashboard
-        </Button>
       </div>
     </>
   );
