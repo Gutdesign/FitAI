@@ -1,24 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { MessageCircle } from "lucide-react";
+import { User } from "lucide-react";
 
-export default function ChatScreen() {
+export default function ProfileScreen() {
   return (
     <div className="min-h-screen p-4 space-y-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
-          <MessageCircle className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Health Chat</h1>
+          <User className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Profile</h1>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>AI Health Assistant</CardTitle>
+            <CardTitle>User Profile</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center py-12 text-muted-foreground">
-              <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Chat feature coming soon...</p>
-              <p className="text-sm">Get personalized health advice and tips</p>
+              <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Profile settings coming soon...</p>
+              <p className="text-sm">Manage your account and preferences</p>
             </div>
           </CardContent>
         </Card>
